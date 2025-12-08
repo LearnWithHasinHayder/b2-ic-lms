@@ -44,10 +44,11 @@ class IC_LMS_Course_API {
         $user_id = get_current_user_id();
         $params = $request->get_json_params();
         $course_id = isset($params['course_id']) ? absint($params['course_id']) : 0;
+        $chapter_id = isset($params['chapter_id']) ? absint($params['chapter_id']) : 0;
         $episode_id = isset($params['episode_id']) ? absint($params['episode_id']) : 0;
 
-        if (!$course_id || !$episode_id) {
-            return new WP_Error('invalid_params', 'Missing course_id or episode_id', array('status' => 400));
+        if (!$course_id || !$chapter_id || !$episode_id) {
+            return new WP_Error('invalid_params', 'Missing course_id, chapter_id, or episode_id', array('status' => 400));
         }
 
         $bookmarks = get_user_meta($user_id, 'ic_lms_bookmarks', true);
@@ -59,12 +60,16 @@ class IC_LMS_Course_API {
             $bookmarks[$course_id] = array();
         }
 
+        if (!isset($bookmarks[$course_id][$chapter_id])) {
+            $bookmarks[$course_id][$chapter_id] = array();
+        }
+
         // Toggle bookmark
-        if (in_array($episode_id, $bookmarks[$course_id])) {
-            $bookmarks[$course_id] = array_values(array_diff($bookmarks[$course_id], array($episode_id)));
+        if (in_array($episode_id, $bookmarks[$course_id][$chapter_id])) {
+            $bookmarks[$course_id][$chapter_id] = array_values(array_diff($bookmarks[$course_id][$chapter_id], array($episode_id)));
             $is_bookmarked = false;
         } else {
-            $bookmarks[$course_id][] = $episode_id;
+            $bookmarks[$course_id][$chapter_id][] = $episode_id;
             $is_bookmarked = true;
         }
 
@@ -74,6 +79,7 @@ class IC_LMS_Course_API {
             'success' => true,
             'is_bookmarked' => $is_bookmarked,
             'course_id' => $course_id,
+            'chapter_id' => $chapter_id,
             'episode_id' => $episode_id
         ), 200);
     }
@@ -82,11 +88,12 @@ class IC_LMS_Course_API {
         $user_id = get_current_user_id();
         $params = $request->get_json_params();
         $course_id = isset($params['course_id']) ? absint($params['course_id']) : 0;
+        $chapter_id = isset($params['chapter_id']) ? absint($params['chapter_id']) : 0;
         $episode_id = isset($params['episode_id']) ? absint($params['episode_id']) : 0;
-        $status = isset($params['status']) ? (bool) $params['status'] : true; // Allow explicit setting, default to true (complete)
+        $status = isset($params['status']) ? (bool) $params['status'] : true;
 
-        if (!$course_id || !$episode_id) {
-            return new WP_Error('invalid_params', 'Missing course_id or episode_id', array('status' => 400));
+        if (!$course_id || !$chapter_id || !$episode_id) {
+            return new WP_Error('invalid_params', 'Missing course_id, chapter_id, or episode_id', array('status' => 400));
         }
 
         $completed = get_user_meta($user_id, 'ic_lms_completed_episodes', true);
@@ -98,15 +105,19 @@ class IC_LMS_Course_API {
             $completed[$course_id] = array();
         }
 
+        if (!isset($completed[$course_id][$chapter_id])) {
+            $completed[$course_id][$chapter_id] = array();
+        }
+
         if ($status) {
             // Mark as complete
-            if (!in_array($episode_id, $completed[$course_id])) {
-                $completed[$course_id][] = $episode_id;
+            if (!in_array($episode_id, $completed[$course_id][$chapter_id])) {
+                $completed[$course_id][$chapter_id][] = $episode_id;
             }
         } else {
             // Mark as incomplete
-            if (in_array($episode_id, $completed[$course_id])) {
-                $completed[$course_id] = array_values(array_diff($completed[$course_id], array($episode_id)));
+            if (in_array($episode_id, $completed[$course_id][$chapter_id])) {
+                $completed[$course_id][$chapter_id] = array_values(array_diff($completed[$course_id][$chapter_id], array($episode_id)));
             }
         }
 
@@ -116,6 +127,7 @@ class IC_LMS_Course_API {
             'success' => true,
             'is_completed' => $status,
             'course_id' => $course_id,
+            'chapter_id' => $chapter_id,
             'episode_id' => $episode_id
         ), 200);
     }
@@ -234,9 +246,16 @@ class IC_LMS_Course_API {
                         // Determine if has downloads
                         $has_download = !empty($resource_url);
 
-                        // Determine status
-                        $is_bookmarked = in_array($episode_counter, $bookmarks);
-                        $is_completed = in_array($episode_counter, $completed);
+                        // Determine status - check correctly with chapter ID
+                        $is_bookmarked = false;
+                        if (isset($bookmarks[$chapter_counter]) && in_array($episode_counter, $bookmarks[$chapter_counter])) {
+                            $is_bookmarked = true;
+                        }
+
+                        $is_completed = false;
+                        if (isset($completed[$chapter_counter]) && in_array($episode_counter, $completed[$chapter_counter])) {
+                            $is_completed = true;
+                        }
 
                         $episode_data = array(
                             'id' => $episode_counter,
