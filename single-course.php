@@ -10,7 +10,6 @@
     show_admin_bar(false);
     wp_head();
     ?>
-    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 
 <body class="bg-gray-100 text-gray-800" x-data="coursePlayer()">
@@ -174,54 +173,6 @@
     </div>
 
     <?php wp_footer(); ?>
-    
-    <script>
-        let youtubePlayer;
-        
-        // YouTube API ready callback
-        function onYouTubeIframeAPIReady() {
-            // Player will be initialized when video changes
-        }
-        
-        function initializeYouTubePlayer() {
-            const iframe = document.getElementById('youtube-player');
-            if (iframe && !youtubePlayer) {
-                try {
-                    youtubePlayer = new YT.Player('youtube-player', {
-                        events: {
-                            'onStateChange': onPlayerStateChange
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error initializing YouTube player:', error);
-                }
-            }
-        }
-        
-        // Handle YouTube player state changes
-        function onPlayerStateChange(event) {
-            // YT.PlayerState.ENDED = 0
-            if (event.data === YT.PlayerState.ENDED) {
-                // Video has ended, mark as completed
-                if (window.coursePlayerInstance && window.coursePlayerInstance.markEpisodeCompleted) {
-                    window.coursePlayerInstance.markEpisodeCompleted();
-                }
-            }
-        }
-        
-        // Initialize when Alpine is ready
-        document.addEventListener('alpine:init', () => {
-            Alpine.nextTick(() => {
-                window.coursePlayerInstance = Alpine.store('coursePlayer');
-            });
-        });
-        
-        // Re-initialize player when video changes
-        window.addEventListener('videoChanged', () => {
-            // Small delay to ensure iframe is updated
-            setTimeout(initializeYouTubePlayer, 500);
-        });
-    </script>
 </body>
 
 </html>

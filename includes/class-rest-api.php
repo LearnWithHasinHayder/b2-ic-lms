@@ -18,7 +18,7 @@ class IC_LMS_Course_API {
         ));
 
         register_rest_route('ic-lms/v1', '/user/complete', array(
-            'methods' => 'POST',
+            'methods' => array('POST', 'DELETE'),
             'callback' => array($this, 'mark_episode_completed'),
             'permission_callback' => array($this, 'check_auth'),
         ));
@@ -98,7 +98,6 @@ class IC_LMS_Course_API {
         $course_id = isset($params['course_id']) ? absint($params['course_id']) : 0;
         $chapter_id = isset($params['chapter_id']) ? absint($params['chapter_id']) : 0;
         $episode_id = isset($params['episode_id']) ? absint($params['episode_id']) : 0;
-        $status = isset($params['status']) ? (bool) $params['status'] : true;
 
         if (!$course_id || !$chapter_id || !$episode_id) {
             return new WP_Error('invalid_params', 'Missing course_id, chapter_id, or episode_id', array('status' => 400));
@@ -117,23 +116,28 @@ class IC_LMS_Course_API {
             $completed[$course_id][$chapter_id] = array();
         }
 
-        if ($status) {
+        $method = $request->get_method();
+        if ($method === 'POST') {
             // Mark as complete
             if (!in_array($episode_id, $completed[$course_id][$chapter_id])) {
                 $completed[$course_id][$chapter_id][] = $episode_id;
             }
-        } else {
+            $is_completed = true;
+        } elseif ($method === 'DELETE') {
             // Mark as incomplete
             if (in_array($episode_id, $completed[$course_id][$chapter_id])) {
                 $completed[$course_id][$chapter_id] = array_values(array_diff($completed[$course_id][$chapter_id], array($episode_id)));
             }
+            $is_completed = false;
+        } else {
+            return new WP_Error('invalid_method', 'Invalid method', array('status' => 405));
         }
 
         update_user_meta($user_id, 'ic_lms_completed_episodes', $completed);
 
         return new WP_REST_Response(array(
             'success' => true,
-            'is_completed' => $status,
+            'is_completed' => $is_completed,
             'course_id' => $course_id,
             'chapter_id' => $chapter_id,
             'episode_id' => $episode_id

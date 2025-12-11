@@ -97,6 +97,9 @@ function coursePlayer() {
         // Load user bookmarks
         await this.loadBookmarks();
         
+        // Load user completed videos
+        await this.loadCompletedVideos();
+        
       } catch (error) {
         console.error('Failed to load course data:', error);
       }
@@ -139,6 +142,43 @@ function coursePlayer() {
       }
     },
     
+    async loadCompletedVideos() {
+      try {
+        // Extract base URL from course API URL
+        const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
+        // Fetch user completed episodes for current course with authentication nonce
+        const response = await fetch(`${baseUrl}/user/completes?course_id=${this.courseData.course.id}`, {
+          headers: {
+            'X-WP-Nonce': icLmsConfig.restNonce,
+          }
+        });
+        // Parse JSON response
+        const data = await response.json();
+        // Check if request was successful and completed episodes exist
+        if (data.success && data.completed) {
+          // Loop through each chapter's completed episodes
+          for (const [chapterId, episodeIds] of Object.entries(data.completed)) {
+            // Find the chapter object by ID
+            const chapter = this.courseData.course.chapters.find(ch => ch.id == chapterId);
+            if (chapter) {
+              // Loop through episode IDs in this chapter
+              episodeIds.forEach(epId => {
+                // Find the video object by ID
+                const video = chapter.videos.find(v => v.id == epId);
+                if (video) {
+                  // Mark this video as completed
+                  video.isCompleted = true;
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        // Log any errors that occur during completed videos loading
+        console.error('Failed to load completed videos:', error);
+      }
+    },
+    
     selectVideo(video) {
       this.currentVideo = video;
       this.currentVideoIndex = this.allVideos.findIndex(v => v.id === video.id);
@@ -162,9 +202,6 @@ function coursePlayer() {
           hljs.highlightAll();
         }
       });
-      
-      // Dispatch event for YouTube player reinitialization
-      window.dispatchEvent(new CustomEvent('videoChanged'));
     },
     
     // Helper method to find which chapter a video belongs to
@@ -270,24 +307,23 @@ function coursePlayer() {
       return url;
     },
     
-    async markEpisodeCompleted() {
-      // Return early if no current video, already completed, or not a YouTube video
-      if (!this.currentVideo || this.currentVideo.isCompleted || 
-          !this.currentVideo.videoUrl || 
-          (!this.currentVideo.videoUrl.includes('youtube.com') && !this.currentVideo.videoUrl.includes('youtu.be'))) {
-        return;
-      }
+    async toggleComplete() {
+      // Return early if no current video
+      if (!this.currentVideo) return;
       
       // Find the chapter containing this video
       const chapter = this.findChapterForVideo(this.currentVideo);
       if (!chapter) return;
       
+      // Determine HTTP method: DELETE if completed, POST if not
+      const method = this.currentVideo.isCompleted ? 'DELETE' : 'POST';
+      
       try {
         // Extract base URL from course API URL
         const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
-        // Send API request to mark episode as completed
+        // Send API request to toggle completion
         const response = await fetch(`${baseUrl}/user/complete`, {
-          method: 'POST',
+          method: method,
           headers: {
             'Content-Type': 'application/json',
             'X-WP-Nonce': icLmsConfig.restNonce,
@@ -295,8 +331,7 @@ function coursePlayer() {
           body: JSON.stringify({
             course_id: this.courseData.course.id,
             chapter_id: chapter.id,
-            episode_id: this.currentVideo.id,
-            status: true
+            episode_id: this.currentVideo.id
           })
         });
         // Parse JSON response
@@ -306,17 +341,11 @@ function coursePlayer() {
           this.currentVideo.isCompleted = data.is_completed;
         } else {
           // Log API error
-          console.error('Mark completed failed:', data);
+          console.error('Mark complete toggle failed:', data);
         }
       } catch (error) {
         // Log network or other errors
-        console.error('Error marking episode completed:', error);
-      }
-    },
-    
-    toggleComplete() {
-      if (this.currentVideo) {
-        this.currentVideo.isCompleted = !this.currentVideo.isCompleted;
+        console.error('Error toggling completion:', error);
       }
     },
     
