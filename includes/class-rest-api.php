@@ -41,48 +41,61 @@ class IC_LMS_Course_API {
     }
 
     function bookmark_episode($request) {
+        // Get the current logged-in user's ID
         $user_id = get_current_user_id();
+        // Parse JSON parameters from the request body
         $params = $request->get_json_params();
+        // Extract and sanitize course_id from parameters, default to 0 if not provided
         $course_id = isset($params['course_id']) ? absint($params['course_id']) : 0;
+        // Extract and sanitize chapter_id from parameters, default to 0 if not provided
         $chapter_id = isset($params['chapter_id']) ? absint($params['chapter_id']) : 0;
+        // Extract and sanitize episode_id from parameters, default to 0 if not provided
         $episode_id = isset($params['episode_id']) ? absint($params['episode_id']) : 0;
 
+        // Validate that all required parameters are provided and valid
         if (!$course_id || !$chapter_id || !$episode_id) {
             return new WP_Error('invalid_params', 'Missing course_id, chapter_id, or episode_id', array('status' => 400));
         }
 
+        // Retrieve user's existing bookmarks from user meta, default to empty array if none exist
         $bookmarks = get_user_meta($user_id, 'ic_lms_bookmarks', true);
         if (!is_array($bookmarks)) {
             $bookmarks = array();
         }
 
+        // Ensure course structure exists in bookmarks array
         if (!isset($bookmarks[$course_id])) {
             $bookmarks[$course_id] = array();
         }
 
+        // Ensure chapter structure exists in course bookmarks
         if (!isset($bookmarks[$course_id][$chapter_id])) {
             $bookmarks[$course_id][$chapter_id] = array();
         }
 
+        // Get the HTTP method (POST for bookmark, DELETE for unbookmark)
         $method = $request->get_method();
         if ($method === 'POST') {
-            // Add bookmark
+            // Add bookmark: check if episode is not already bookmarked, then add it
             if (!in_array($episode_id, $bookmarks[$course_id][$chapter_id])) {
                 $bookmarks[$course_id][$chapter_id][] = $episode_id;
             }
             $is_bookmarked = true;
         } elseif ($method === 'DELETE') {
-            // Remove bookmark
+            // Remove bookmark: check if episode is bookmarked, then remove it
             if (in_array($episode_id, $bookmarks[$course_id][$chapter_id])) {
                 $bookmarks[$course_id][$chapter_id] = array_values(array_diff($bookmarks[$course_id][$chapter_id], array($episode_id)));
             }
             $is_bookmarked = false;
         } else {
+            // Invalid HTTP method provided
             return new WP_Error('invalid_method', 'Invalid method', array('status' => 405));
         }
 
+        // Save updated bookmarks to user meta
         update_user_meta($user_id, 'ic_lms_bookmarks', $bookmarks);
 
+        // Return success response with bookmark status and identifiers
         return new WP_REST_Response(array(
             'success' => true,
             'is_bookmarked' => $is_bookmarked,
@@ -93,48 +106,61 @@ class IC_LMS_Course_API {
     }
 
     function mark_episode_completed($request) {
+        // Get the current logged-in user's ID
         $user_id = get_current_user_id();
+        // Parse JSON parameters from the request body
         $params = $request->get_json_params();
+        // Extract and sanitize course_id from parameters, default to 0 if not provided
         $course_id = isset($params['course_id']) ? absint($params['course_id']) : 0;
+        // Extract and sanitize chapter_id from parameters, default to 0 if not provided
         $chapter_id = isset($params['chapter_id']) ? absint($params['chapter_id']) : 0;
+        // Extract and sanitize episode_id from parameters, default to 0 if not provided
         $episode_id = isset($params['episode_id']) ? absint($params['episode_id']) : 0;
 
+        // Validate that all required parameters are provided and valid
         if (!$course_id || !$chapter_id || !$episode_id) {
             return new WP_Error('invalid_params', 'Missing course_id, chapter_id, or episode_id', array('status' => 400));
         }
 
+        // Retrieve user's existing completed episodes from user meta, default to empty array if none exist
         $completed = get_user_meta($user_id, 'ic_lms_completed_episodes', true);
         if (!is_array($completed)) {
             $completed = array();
         }
 
+        // Ensure course structure exists in completed episodes array
         if (!isset($completed[$course_id])) {
             $completed[$course_id] = array();
         }
 
+        // Ensure chapter structure exists in course completed episodes
         if (!isset($completed[$course_id][$chapter_id])) {
             $completed[$course_id][$chapter_id] = array();
         }
 
+        // Get the HTTP method (POST for mark complete, DELETE for mark incomplete)
         $method = $request->get_method();
         if ($method === 'POST') {
-            // Mark as complete
+            // Mark as complete: check if episode is not already completed, then add it
             if (!in_array($episode_id, $completed[$course_id][$chapter_id])) {
                 $completed[$course_id][$chapter_id][] = $episode_id;
             }
             $is_completed = true;
         } elseif ($method === 'DELETE') {
-            // Mark as incomplete
+            // Mark as incomplete: check if episode is completed, then remove it
             if (in_array($episode_id, $completed[$course_id][$chapter_id])) {
                 $completed[$course_id][$chapter_id] = array_values(array_diff($completed[$course_id][$chapter_id], array($episode_id)));
             }
             $is_completed = false;
         } else {
+            // Invalid HTTP method provided
             return new WP_Error('invalid_method', 'Invalid method', array('status' => 405));
         }
 
+        // Save updated completed episodes to user meta
         update_user_meta($user_id, 'ic_lms_completed_episodes', $completed);
 
+        // Return success response with completion status and identifiers
         return new WP_REST_Response(array(
             'success' => true,
             'is_completed' => $is_completed,
@@ -145,19 +171,25 @@ class IC_LMS_Course_API {
     }
 
     function get_user_bookmarks($request) {
+        // Get the current logged-in user's ID
         $user_id = get_current_user_id();
+        // Get course_id parameter from the request URL (optional filter)
         $course_id = $request->get_param('course_id');
+        // Retrieve user's bookmarks from user meta
         $bookmarks = get_user_meta($user_id, 'ic_lms_bookmarks', true);
-        
+
+        // Ensure bookmarks is an array, default to empty array if not set
         if (!is_array($bookmarks)) {
             $bookmarks = array();
         }
 
+        // If course_id is provided, filter bookmarks to only show that course's bookmarks
         if ($course_id) {
             $course_id = absint($course_id);
             $bookmarks = isset($bookmarks[$course_id]) ? $bookmarks[$course_id] : array();
         }
 
+        // Return success response with bookmarks data
         return new WP_REST_Response(array(
             'success' => true,
             'bookmarks' => $bookmarks
