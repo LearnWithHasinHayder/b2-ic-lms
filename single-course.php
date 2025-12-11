@@ -10,6 +10,7 @@
     show_admin_bar(false);
     wp_head();
     ?>
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 
 <body class="bg-gray-100 text-gray-800" x-data="coursePlayer()">
@@ -112,7 +113,7 @@
                             <template x-if="currentVideo.contentType === 'video'">
                                 <div>
                                     <div class="video-container bg-black rounded-lg overflow-hidden shadow-lg">
-                                        <iframe :src="currentVideo.videoUrl" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                        <iframe id="youtube-player" :src="getYouTubeEmbedUrl(currentVideo.videoUrl)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                                     </div>
                                     <h2 class="text-2xl font-bold mt-6 mb-2 px-4 md:px-8" x-text="currentVideo.title"></h2>
                                     <div class="text-gray-600 text-base px-4 md:px-8 mb-6" x-text="currentVideo.description || ''"></div>
@@ -173,6 +174,54 @@
     </div>
 
     <?php wp_footer(); ?>
+    
+    <script>
+        let youtubePlayer;
+        
+        // YouTube API ready callback
+        function onYouTubeIframeAPIReady() {
+            // Player will be initialized when video changes
+        }
+        
+        function initializeYouTubePlayer() {
+            const iframe = document.getElementById('youtube-player');
+            if (iframe && !youtubePlayer) {
+                try {
+                    youtubePlayer = new YT.Player('youtube-player', {
+                        events: {
+                            'onStateChange': onPlayerStateChange
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error initializing YouTube player:', error);
+                }
+            }
+        }
+        
+        // Handle YouTube player state changes
+        function onPlayerStateChange(event) {
+            // YT.PlayerState.ENDED = 0
+            if (event.data === YT.PlayerState.ENDED) {
+                // Video has ended, mark as completed
+                if (window.coursePlayerInstance && window.coursePlayerInstance.markEpisodeCompleted) {
+                    window.coursePlayerInstance.markEpisodeCompleted();
+                }
+            }
+        }
+        
+        // Initialize when Alpine is ready
+        document.addEventListener('alpine:init', () => {
+            Alpine.nextTick(() => {
+                window.coursePlayerInstance = Alpine.store('coursePlayer');
+            });
+        });
+        
+        // Re-initialize player when video changes
+        window.addEventListener('videoChanged', () => {
+            // Small delay to ensure iframe is updated
+            setTimeout(initializeYouTubePlayer, 500);
+        });
+    </script>
 </body>
 
 </html>

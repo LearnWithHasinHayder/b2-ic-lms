@@ -162,6 +162,9 @@ function coursePlayer() {
           hljs.highlightAll();
         }
       });
+      
+      // Dispatch event for YouTube player reinitialization
+      window.dispatchEvent(new CustomEvent('videoChanged'));
     },
     
     // Helper method to find which chapter a video belongs to
@@ -253,6 +256,61 @@ function coursePlayer() {
       } catch (error) {
         // Log network or other errors
         console.error('Error handling bookmark:', error);
+      }
+    },
+    
+    getYouTubeEmbedUrl(url) {
+      // Check if it's a YouTube URL
+      if (url && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+        // Add YouTube API parameters if not already present
+        const separator = url.includes('?') ? '&' : '?';
+        return url + separator + 'enablejsapi=1&origin=' + window.location.origin;
+      }
+      // Return original URL if not YouTube
+      return url;
+    },
+    
+    async markEpisodeCompleted() {
+      // Return early if no current video, already completed, or not a YouTube video
+      if (!this.currentVideo || this.currentVideo.isCompleted || 
+          !this.currentVideo.videoUrl || 
+          (!this.currentVideo.videoUrl.includes('youtube.com') && !this.currentVideo.videoUrl.includes('youtu.be'))) {
+        return;
+      }
+      
+      // Find the chapter containing this video
+      const chapter = this.findChapterForVideo(this.currentVideo);
+      if (!chapter) return;
+      
+      try {
+        // Extract base URL from course API URL
+        const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
+        // Send API request to mark episode as completed
+        const response = await fetch(`${baseUrl}/user/complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': icLmsConfig.restNonce,
+          },
+          body: JSON.stringify({
+            course_id: this.courseData.course.id,
+            chapter_id: chapter.id,
+            episode_id: this.currentVideo.id,
+            status: true
+          })
+        });
+        // Parse JSON response
+        const data = await response.json();
+        if (data.success) {
+          // Update local completion state from server response
+          this.currentVideo.isCompleted = data.is_completed;
+        } else {
+          // Log API error
+          console.error('Mark completed failed:', data);
+        }
+      } catch (error) {
+        // Log network or other errors
+        console.error('Error marking episode completed:', error);
       }
     },
     
