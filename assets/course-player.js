@@ -57,13 +57,9 @@ function coursePlayer() {
           });
         });
         
-        // Initialize video states
+        // Initialize chapter states
         this.courseData.course.chapters.forEach(chapter => {
           chapter.isOpen = chapter.id === 1; // Open first chapter by default
-          chapter.videos.forEach(video => {
-            video.isBookmarked = false;
-            video.isCompleted = false;
-          });
         });
         
         // Try to restore last watched episode for this course
@@ -98,8 +94,52 @@ function coursePlayer() {
           }
         });
         
+        // Load user bookmarks
+        await this.loadBookmarks();
+        
       } catch (error) {
         console.error('Failed to load course data:', error);
+      }
+    },
+    
+    /**
+     * Loads user bookmarks for the current course from the server.
+     * 
+     * This method fetches the user's bookmarked episodes for the current course
+     * using the REST API endpoint /user/bookmarks. It includes the WordPress nonce
+     * for authentication and updates the isBookmarked property of each video
+     * based on the server response.
+     * 
+     * The API returns bookmarks structured as {chapterId: [episodeIds]}, and this
+     * method iterates through them to find matching videos and set their bookmark status.
+     * 
+     * @async
+     * @returns {Promise<void>} Resolves when bookmarks are loaded and applied
+     */
+    async loadBookmarks() {
+      try {
+        const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
+        const response = await fetch(`${baseUrl}/user/bookmarks?course_id=${this.courseData.course.id}`, {
+          headers: {
+            'X-WP-Nonce': icLmsConfig.restNonce,
+          }
+        });
+        const data = await response.json();
+        if (data.success && data.bookmarks) {
+          for (const [chapterId, episodeIds] of Object.entries(data.bookmarks)) {
+            const chapter = this.courseData.course.chapters.find(ch => ch.id == chapterId);
+            if (chapter) {
+              episodeIds.forEach(epId => {
+                const video = chapter.videos.find(v => v.id == epId);
+                if (video) {
+                  video.isBookmarked = true;
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load bookmarks:', error);
       }
     },
     
@@ -180,9 +220,33 @@ function coursePlayer() {
       });
     },
     
-    toggleBookmark(video) {
-      if (video) {
-        video.isBookmarked = !video.isBookmarked;
+    async toggleBookmark(video) {
+      if (!video) return;
+      const chapter = this.findChapterForVideo(video);
+      if (!chapter) return;
+      const method = video.isBookmarked ? 'DELETE' : 'POST';
+      try {
+        const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
+        const response = await fetch(`${baseUrl}/user/bookmark`, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': icLmsConfig.restNonce,
+          },
+          body: JSON.stringify({
+            course_id: this.courseData.course.id,
+            chapter_id: chapter.id,
+            episode_id: video.id
+          })
+        });
+        const data = await response.json();
+        if (data.success) {
+          video.isBookmarked = data.is_bookmarked;
+        } else {
+          console.error('Bookmark action failed:', data);
+        }
+      } catch (error) {
+        console.error('Error handling bookmark:', error);
       }
     },
     

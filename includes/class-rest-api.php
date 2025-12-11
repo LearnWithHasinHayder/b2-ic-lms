@@ -12,7 +12,7 @@ class IC_LMS_Course_API {
         ));
 
         register_rest_route('ic-lms/v1', '/user/bookmark', array(
-            'methods' => 'POST',
+            'methods' => array('POST', 'DELETE'),
             'callback' => array($this, 'bookmark_episode'),
             'permission_callback' => array($this, 'check_auth'),
         ));
@@ -64,13 +64,21 @@ class IC_LMS_Course_API {
             $bookmarks[$course_id][$chapter_id] = array();
         }
 
-        // Toggle bookmark
-        if (in_array($episode_id, $bookmarks[$course_id][$chapter_id])) {
-            $bookmarks[$course_id][$chapter_id] = array_values(array_diff($bookmarks[$course_id][$chapter_id], array($episode_id)));
+        $method = $request->get_method();
+        if ($method === 'POST') {
+            // Add bookmark
+            if (!in_array($episode_id, $bookmarks[$course_id][$chapter_id])) {
+                $bookmarks[$course_id][$chapter_id][] = $episode_id;
+            }
+            $is_bookmarked = true;
+        } elseif ($method === 'DELETE') {
+            // Remove bookmark
+            if (in_array($episode_id, $bookmarks[$course_id][$chapter_id])) {
+                $bookmarks[$course_id][$chapter_id] = array_values(array_diff($bookmarks[$course_id][$chapter_id], array($episode_id)));
+            }
             $is_bookmarked = false;
         } else {
-            $bookmarks[$course_id][$chapter_id][] = $episode_id;
-            $is_bookmarked = true;
+            return new WP_Error('invalid_method', 'Invalid method', array('status' => 405));
         }
 
         update_user_meta($user_id, 'ic_lms_bookmarks', $bookmarks);
