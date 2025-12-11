@@ -102,36 +102,31 @@ function coursePlayer() {
       }
     },
     
-    /**
-     * Loads user bookmarks for the current course from the server.
-     * 
-     * This method fetches the user's bookmarked episodes for the current course
-     * using the REST API endpoint /user/bookmarks. It includes the WordPress nonce
-     * for authentication and updates the isBookmarked property of each video
-     * based on the server response.
-     * 
-     * The API returns bookmarks structured as {chapterId: [episodeIds]}, and this
-     * method iterates through them to find matching videos and set their bookmark status.
-     * 
-     * @async
-     * @returns {Promise<void>} Resolves when bookmarks are loaded and applied
-     */
     async loadBookmarks() {
       try {
+        // Extract base URL from course API URL
         const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
+        // Fetch user bookmarks for current course with authentication nonce
         const response = await fetch(`${baseUrl}/user/bookmarks?course_id=${this.courseData.course.id}`, {
           headers: {
             'X-WP-Nonce': icLmsConfig.restNonce,
           }
         });
+        // Parse JSON response
         const data = await response.json();
+        // Check if request was successful and bookmarks exist
         if (data.success && data.bookmarks) {
+          // Loop through each chapter's bookmarked episodes
           for (const [chapterId, episodeIds] of Object.entries(data.bookmarks)) {
+            // Find the chapter object by ID
             const chapter = this.courseData.course.chapters.find(ch => ch.id == chapterId);
             if (chapter) {
+              // Loop through episode IDs in this chapter
               episodeIds.forEach(epId => {
+                // Find the video object by ID
                 const video = chapter.videos.find(v => v.id == epId);
                 if (video) {
+                  // Mark this video as bookmarked
                   video.isBookmarked = true;
                 }
               });
@@ -139,6 +134,7 @@ function coursePlayer() {
           }
         }
       } catch (error) {
+        // Log any errors that occur during bookmark loading
         console.error('Failed to load bookmarks:', error);
       }
     },
@@ -221,12 +217,18 @@ function coursePlayer() {
     },
     
     async toggleBookmark(video) {
+      // Return early if no video provided
       if (!video) return;
+      // Find the chapter containing this video
       const chapter = this.findChapterForVideo(video);
+      // Return early if chapter not found
       if (!chapter) return;
+      // Determine HTTP method: DELETE if bookmarked, POST if not
       const method = video.isBookmarked ? 'DELETE' : 'POST';
       try {
+        // Extract base URL from course API URL
         const baseUrl = icLmsConfig.apiUrl.split('/course/')[0];
+        // Send API request to toggle bookmark
         const response = await fetch(`${baseUrl}/user/bookmark`, {
           method: method,
           headers: {
@@ -239,13 +241,17 @@ function coursePlayer() {
             episode_id: video.id
           })
         });
+        // Parse JSON response
         const data = await response.json();
         if (data.success) {
+          // Update local bookmark state from server response
           video.isBookmarked = data.is_bookmarked;
         } else {
+          // Log API error
           console.error('Bookmark action failed:', data);
         }
       } catch (error) {
+        // Log network or other errors
         console.error('Error handling bookmark:', error);
       }
     },
