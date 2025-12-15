@@ -133,30 +133,29 @@
                                     <div class="space-y-4 mb-8">
                                         <template x-for="(option, index) in currentQuizQuestion.options" :key="index">
                                             <div @click="handleQuizOptionClick(option)"
-                                                 class="flex items-start p-4 rounded-lg border cursor-pointer transition-all duration-200 relative overflow-hidden"
+                                                 class="flex items-center p-4 rounded-lg border cursor-pointer transition-all duration-200 relative overflow-hidden"
                                                  :class="{
-                                                    'hover:bg-gray-50': !quiz.answers[quiz.currentIndex],
-                                                    'bg-gray-50 border-gray-200': !quiz.answers[quiz.currentIndex] || (quiz.answers[quiz.currentIndex] !== option),
-                                                    'bg-green-50 border-green-500 text-green-800': quiz.answers[quiz.currentIndex] === option && isQuizOptionCorrect(option),
-                                                    'bg-red-50 border-red-500 text-red-800': quiz.answers[quiz.currentIndex] === option && !isQuizOptionCorrect(option),
-                                                    'opacity-60 cursor-not-allowed': quiz.answers[quiz.currentIndex] && quiz.answers[quiz.currentIndex] !== option
+                                                    'hover:bg-gray-50 bg-gray-50 border-gray-200': !quiz.answers[quiz.currentIndex],
+                                                    'bg-green-50 border-green-500 text-green-800': quiz.answers[quiz.currentIndex] && isQuizOptionCorrect(option),
+                                                    'bg-red-50 border-red-500 text-red-800': quiz.answers[quiz.currentIndex] && quiz.answers[quiz.currentIndex] === option && !isQuizOptionCorrect(option),
+                                                    'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200': quiz.answers[quiz.currentIndex] && quiz.answers[quiz.currentIndex] !== option && !isQuizOptionCorrect(option)
                                                  }">
                                                 
                                                 <div class="mr-4 font-medium min-w-[24px]" 
                                                      :class="{
-                                                        'text-gray-500': !quiz.answers[quiz.currentIndex] || (quiz.answers[quiz.currentIndex] !== option),
-                                                        'text-green-800': quiz.answers[quiz.currentIndex] === option && isQuizOptionCorrect(option),
-                                                        'text-red-800': quiz.answers[quiz.currentIndex] === option && !isQuizOptionCorrect(option)
+                                                        'text-gray-500': !quiz.answers[quiz.currentIndex] || (quiz.answers[quiz.currentIndex] !== option && !isQuizOptionCorrect(option)),
+                                                        'text-green-800': quiz.answers[quiz.currentIndex] && isQuizOptionCorrect(option),
+                                                        'text-red-800': quiz.answers[quiz.currentIndex] && quiz.answers[quiz.currentIndex] === option && !isQuizOptionCorrect(option)
                                                      }"
                                                      x-text="String.fromCharCode(65 + index) + '.'"></div>
                                                 
                                                 <div class="flex-grow text-base" x-text="option"></div>
 
                                                 <!-- Icons for feedback -->
-                                                <template x-if="quiz.answers[quiz.currentIndex] === option">
-                                                    <div class="absolute right-4 top-4">
+                                                <template x-if="quiz.answers[quiz.currentIndex] && (quiz.answers[quiz.currentIndex] === option || isQuizOptionCorrect(option))">
+                                                    <div class="absolute right-4 top-1/2 -translate-y-1/2">
                                                         <i class="fas fa-check-circle text-green-500 text-xl" x-show="isQuizOptionCorrect(option)"></i>
-                                                        <i class="fas fa-times-circle text-red-500 text-xl" x-show="!isQuizOptionCorrect(option)"></i>
+                                                        <i class="fas fa-times-circle text-red-500 text-xl" x-show="!isQuizOptionCorrect(option) && quiz.answers[quiz.currentIndex] === option"></i>
                                                     </div>
                                                 </template>
                                             </div>
@@ -168,7 +167,6 @@
                                             <button @click="open = !open" class="flex items-center text-gray-700 font-medium hover:text-gray-900 focus:outline-none">
                                                 Hint <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'transform rotate-180': open}"></i>
                                             </button>
-                                            <!-- Dummy hint content since not in JSON -->
                                             <div x-show="open" @click.away="open = false" class="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10 text-sm text-gray-600">
                                                 No hints available for this question.
                                             </div>
