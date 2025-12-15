@@ -26,6 +26,7 @@ define('IC_LMS_PLUGIN_BASENAME', plugin_basename(__FILE__));
 require_once IC_LMS_PLUGIN_DIR . 'includes/class-rewrite.php';
 require_once IC_LMS_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once IC_LMS_PLUGIN_DIR . 'includes/class-lms-player.php';
+require_once IC_LMS_PLUGIN_DIR . 'includes/class-certificate.php';
 
 add_action('plugins_loaded', 'ic_lms_init');
 
@@ -33,4 +34,5 @@ function ic_lms_init(){
     new IC_LMS_Rewrite();
     new IC_LMS_Course_API();
     new IC_LMS_Player();
+    new IC_LMS_Certificate();
 }
