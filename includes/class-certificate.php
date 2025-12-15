@@ -257,7 +257,7 @@ class IC_LMS_Certificate {
 
             <div class="no-print print-actions">
                 <button onclick="window.print()" class="button button-primary button-hero">Print Certificate</button>
-                <a href="<?php echo admin_url('admin.php?page=ic-lms-certificate'); ?>" class="button">Back to Generator</a>
+                <a href="<?php echo admin_url('admin.php?page=ic-lms-certificate'); ?>" class="button button-hero">Back to Generator</a>
             </div>
         </div>
 
@@ -395,10 +395,16 @@ class IC_LMS_Certificate {
 
             .print-actions {
                 margin-top: 30px;
+                display: flex;
+                justify-content: center;
+                gap: 20px;
             }
 
-            .print-actions button {
-                margin-right: 15px;
+            .print-actions .button {
+                margin-right: 0;
+                min-width: 200px;
+                justify-content: center;
+                text-align: center;
             }
 
             @media print {
