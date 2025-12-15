@@ -59,6 +59,13 @@ class IC_LMS_Certificate {
             ]
         ];
 
+        // Define styles
+        $styles = [
+            'classic' => 'Classic',
+            'modern' => 'Modern',
+            'minimal' => 'Minimal',
+        ];
+
         ?>
         <div class="wrap ic-lms-certificate-wrap">
             <h1 class="wp-heading-inline">Generate Certificate</h1>
@@ -80,6 +87,17 @@ class IC_LMS_Certificate {
                             <option value="">Select a Course...</option>
                             <?php foreach ($courses as $course) : ?>
                                 <option value="<?php echo esc_attr($course->post_title); ?>"><?php echo esc_html($course->post_title); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <label for="certificate_style">Certificate Style</label>
+                        <select id="certificate_style" name="certificate_style" class="regular-text">
+                            <?php foreach ($styles as $value => $label) : ?>
+                                <option value="<?php echo esc_attr($value); ?>"><?php echo esc_html($label); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -196,11 +214,12 @@ class IC_LMS_Certificate {
         $student_name = sanitize_text_field($_POST['student_name']);
         $course_name = sanitize_text_field($_POST['course_name']);
         $template_text = sanitize_textarea_field($_POST['template_text']);
+        $style = isset($_POST['certificate_style']) ? sanitize_text_field($_POST['certificate_style']) : 'classic';
         $date = date_i18n(get_option('date_format'));
 
         ?>
         <div class="ic-lms-print-preview">
-            <div class="certificate-container">
+            <div class="certificate-container style-<?php echo esc_attr($style); ?>">
                 <div class="certificate-border">
                     <div class="certificate-content">
                         <div class="certificate-header">
@@ -410,6 +429,86 @@ class IC_LMS_Certificate {
                     size: landscape;
                     margin: 0;
                 }
+            }
+
+            /* Modern Style */
+            .certificate-container.style-modern {
+                font-family: 'Roboto', sans-serif;
+                background: #fdfdfd;
+                color: #222;
+            }
+            .style-modern .certificate-border {
+                border: 10px solid #2c3e50;
+                padding: 0;
+            }
+            .style-modern .certificate-border:before {
+                display: none;
+            }
+            .style-modern .certificate-header h1 {
+                font-family: 'Roboto', sans-serif;
+                color: #2c3e50;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                font-weight: 900;
+            }
+            .style-modern .certificate-icon .dashicons {
+                color: #2c3e50;
+            }
+            .style-modern .student-name {
+                font-family: 'Roboto', sans-serif;
+                font-weight: 300;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: #2c3e50;
+            }
+            .style-modern .course-name {
+                font-family: 'Roboto', sans-serif;
+                font-weight: 700;
+                color: #34495e;
+            }
+
+            /* Minimal Style */
+            .certificate-container.style-minimal {
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                background: #fff;
+            }
+            .style-minimal .certificate-border {
+                border: none;
+                padding: 40px;
+            }
+            .style-minimal .certificate-border:before {
+                display: none;
+            }
+            .style-minimal .certificate-header h1 {
+                font-family: 'Helvetica Neue', sans-serif;
+                font-weight: 300;
+                font-size: 36px;
+                color: #333;
+                text-transform: none;
+                letter-spacing: 0;
+            }
+            .style-minimal .certificate-icon {
+                display: none;
+            }
+            .style-minimal .student-name {
+                font-family: 'Helvetica Neue', sans-serif;
+                font-weight: 600;
+                font-size: 48px;
+                margin: 40px 0;
+            }
+            .style-minimal .course-name {
+                font-family: 'Helvetica Neue', sans-serif;
+                font-weight: 400;
+                font-size: 24px;
+                color: #666;
+            }
+            .style-minimal .cert-text {
+                font-style: italic;
+                color: #888;
+            }
+            .style-minimal .date-line,
+            .style-minimal .signature-line {
+                border-bottom: 1px solid #eee;
             }
         </style>
         <?php
