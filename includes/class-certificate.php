@@ -148,10 +148,12 @@ class IC_LMS_Certificate {
                 color: #3c434a;
                 font-size: 14px;
             }
-            .ic-lms-certificate-wrap input[type="text"],
-            .ic-lms-certificate-wrap select,
-            .ic-lms-certificate-wrap textarea {
+            .ic-lms-certificate-wrap .form-group input[type="text"],
+            .ic-lms-certificate-wrap .form-group select,
+            .ic-lms-certificate-wrap .form-group textarea {
                 width: 100%;
+                display: block;
+                max-width: 100%;
                 padding: 12px;
                 border: 1px solid #c3c4c7;
                 border-radius: 4px;
