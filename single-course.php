@@ -122,6 +122,74 @@
                                 </div>
                             </template>
 
+                            <template x-if="currentVideo.contentType === 'quiz' && currentQuizQuestion">
+                                <div class="p-8 max-w-4xl mx-auto">
+                                    <div class="mb-4 text-gray-500">
+                                        <span x-text="quiz.currentIndex + 1"></span> / <span x-text="quiz.questions.length"></span>
+                                    </div>
+
+                                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-8" x-text="currentQuizQuestion.question"></h2>
+
+                                    <div class="space-y-4 mb-8">
+                                        <template x-for="(option, index) in currentQuizQuestion.options" :key="index">
+                                            <div @click="handleQuizOptionClick(option)"
+                                                 class="flex items-start p-4 rounded-lg border cursor-pointer transition-all duration-200 relative overflow-hidden"
+                                                 :class="{
+                                                    'hover:bg-gray-50': !quiz.answers[quiz.currentIndex],
+                                                    'bg-gray-50 border-gray-200': !quiz.answers[quiz.currentIndex] || (quiz.answers[quiz.currentIndex] !== option),
+                                                    'bg-green-50 border-green-500 text-green-800': quiz.answers[quiz.currentIndex] === option && isQuizOptionCorrect(option),
+                                                    'bg-red-50 border-red-500 text-red-800': quiz.answers[quiz.currentIndex] === option && !isQuizOptionCorrect(option),
+                                                    'opacity-60 cursor-not-allowed': quiz.answers[quiz.currentIndex] && quiz.answers[quiz.currentIndex] !== option
+                                                 }">
+                                                
+                                                <div class="mr-4 font-medium min-w-[24px]" 
+                                                     :class="{
+                                                        'text-gray-500': !quiz.answers[quiz.currentIndex] || (quiz.answers[quiz.currentIndex] !== option),
+                                                        'text-green-800': quiz.answers[quiz.currentIndex] === option && isQuizOptionCorrect(option),
+                                                        'text-red-800': quiz.answers[quiz.currentIndex] === option && !isQuizOptionCorrect(option)
+                                                     }"
+                                                     x-text="String.fromCharCode(65 + index) + '.'"></div>
+                                                
+                                                <div class="flex-grow text-base" x-text="option"></div>
+
+                                                <!-- Icons for feedback -->
+                                                <template x-if="quiz.answers[quiz.currentIndex] === option">
+                                                    <div class="absolute right-4 top-4">
+                                                        <i class="fas fa-check-circle text-green-500 text-xl" x-show="isQuizOptionCorrect(option)"></i>
+                                                        <i class="fas fa-times-circle text-red-500 text-xl" x-show="!isQuizOptionCorrect(option)"></i>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <div class="flex items-center justify-between mt-8">
+                                        <div class="relative" x-data="{ open: false }">
+                                            <button @click="open = !open" class="flex items-center text-gray-700 font-medium hover:text-gray-900 focus:outline-none">
+                                                Hint <i class="fas fa-chevron-down ml-2 text-xs transition-transform" :class="{'transform rotate-180': open}"></i>
+                                            </button>
+                                            <!-- Dummy hint content since not in JSON -->
+                                            <div x-show="open" @click.away="open = false" class="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10 text-sm text-gray-600">
+                                                No hints available for this question.
+                                            </div>
+                                        </div>
+
+                                        <div class="flex space-x-4">
+                                            <button @click="quizPrevQuestion()" 
+                                                    class="px-6 py-2 rounded-full border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    :disabled="quiz.currentIndex === 0">
+                                                Previous
+                                            </button>
+                                            <button @click="quizNextQuestion()" 
+                                                    class="px-8 py-2 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    :disabled="quiz.currentIndex === quiz.questions.length - 1">
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
                             <template x-if="currentVideo.contentType === 'text' && currentVideo.content">
                                 <div x-html="currentVideo.content"></div>
                             </template>

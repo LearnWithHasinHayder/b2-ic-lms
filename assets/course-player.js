@@ -36,6 +36,14 @@ function coursePlayer() {
     currentVideoIndex: 0,
     allVideos: [],
     
+    // Quiz specific state
+    quiz: {
+      questions: [],
+      currentIndex: 0,
+      answers: {},
+      isCompleted: false
+    },
+    
     init() {
       this.loadCourseData();
       this.initializeTheme();
@@ -182,6 +190,19 @@ function coursePlayer() {
     selectVideo(video) {
       this.currentVideo = video;
       this.currentVideoIndex = this.allVideos.findIndex(v => v.id === video.id);
+      
+      // Initialize quiz if content type is quiz
+      if (video.contentType === 'quiz' && video.content) {
+        this.initQuiz(video.content);
+      } else {
+        // Reset quiz state when switching to non-quiz content
+        this.quiz = {
+            questions: [],
+            currentIndex: 0,
+            answers: {},
+            isCompleted: false
+        };
+      }
       
       // Save this as the last watched episode
       this.saveLastWatchedEpisode(video);
@@ -414,6 +435,63 @@ function coursePlayer() {
       window.addEventListener('resize', () => {
         // Alpine.js will automatically re-evaluate isMobile() when needed
       }, { passive: true });
+    },
+
+    // Quiz Methods
+    initQuiz(content) {
+      try {
+        const questions = typeof content === 'string' ? JSON.parse(content) : content;
+        
+        if (Array.isArray(questions)) {
+          this.quiz = {
+            questions: questions,
+            currentIndex: 0,
+            answers: {},
+            isCompleted: false
+          };
+        } else {
+          console.error("Quiz content is not an array");
+          this.quiz.questions = [];
+        }
+      } catch (e) {
+        console.error("Failed to parse quiz JSON", e);
+        this.quiz.questions = [];
+      }
+    },
+
+    get currentQuizQuestion() {
+      if (!this.quiz.questions || this.quiz.questions.length === 0) return null;
+      return this.quiz.questions[this.quiz.currentIndex];
+    },
+
+    isQuizOptionSelected(option) {
+      if (!this.quiz.answers) return false;
+      return this.quiz.answers[this.quiz.currentIndex] === option;
+    },
+
+    isQuizOptionCorrect(option) {
+      const question = this.currentQuizQuestion;
+      if (!question) return false;
+      return question.answer === option;
+    },
+
+    handleQuizOptionClick(option) {
+      // Prevent changing answer if already selected
+      if (this.quiz.answers[this.quiz.currentIndex]) return;
+      
+      this.quiz.answers[this.quiz.currentIndex] = option;
+    },
+
+    quizNextQuestion() {
+      if (this.quiz.currentIndex < this.quiz.questions.length - 1) {
+        this.quiz.currentIndex++;
+      }
+    },
+
+    quizPrevQuestion() {
+      if (this.quiz.currentIndex > 0) {
+        this.quiz.currentIndex--;
+      }
     }
   }
 }
