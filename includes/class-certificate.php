@@ -30,6 +30,35 @@ class IC_LMS_Certificate {
     }
 
     private function render_form() {
+        // Fetch published courses
+        $courses = get_posts([
+            'post_type' => 'course',
+            'numberposts' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'title',
+            'order' => 'ASC',
+        ]);
+
+        // Define templates
+        $templates = [
+            'completion' => [
+                'label' => 'Standard Completion',
+                'text' => 'This is to certify that the student has successfully completed the course requirements and demonstrated proficiency in the subject matter.'
+            ],
+            'excellence' => [
+                'label' => 'Certificate of Excellence',
+                'text' => 'This award is presented in recognition of outstanding performance and dedication shown throughout the course.'
+            ],
+            'participation' => [
+                'label' => 'Certificate of Participation',
+                'text' => 'This acknowledges that the student has actively participated in the training sessions and completed all assigned modules.'
+            ],
+            'achievement' => [
+                'label' => 'Certificate of Achievement',
+                'text' => 'Presented for successfully acquiring new skills and knowledge through the completion of this comprehensive course.'
+            ]
+        ];
+
         ?>
         <div class="wrap ic-lms-certificate-wrap">
             <h1 class="wp-heading-inline">Generate Certificate</h1>
@@ -47,12 +76,28 @@ class IC_LMS_Certificate {
 
                     <div class="form-group">
                         <label for="course_name">Course Name</label>
-                        <input type="text" id="course_name" name="course_name" class="regular-text" required placeholder="e.g. Advanced Web Development">
+                        <select id="course_name" name="course_name" class="regular-text" required>
+                            <option value="">Select a Course...</option>
+                            <?php foreach ($courses as $course) : ?>
+                                <option value="<?php echo esc_attr($course->post_title); ?>"><?php echo esc_html($course->post_title); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="template_select">Message Template</label>
+                        <select id="template_select" class="regular-text">
+                            <option value="">Select a Template...</option>
+                            <?php foreach ($templates as $key => $template) : ?>
+                                <option value="<?php echo esc_attr($template['text']); ?>"><?php echo esc_html($template['label']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">Select a template to auto-fill the text below.</p>
                     </div>
 
                     <div class="form-group">
                         <label for="template_text">Certificate Text</label>
-                        <textarea id="template_text" name="template_text" class="large-text" rows="3">This is to certify that the student has successfully completed the course.</textarea>
+                        <textarea id="template_text" name="template_text" class="large-text" rows="4" required>This is to certify that the student has successfully completed the course requirements.</textarea>
                     </div>
 
                     <p class="submit">
@@ -61,6 +106,19 @@ class IC_LMS_Certificate {
                 </form>
             </div>
         </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const templateSelect = document.getElementById('template_select');
+                const templateText = document.getElementById('template_text');
+
+                templateSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        templateText.value = this.value;
+                    }
+                });
+            });
+        </script>
 
         <style>
             .ic-lms-certificate-wrap {
@@ -91,6 +149,7 @@ class IC_LMS_Certificate {
                 font-size: 14px;
             }
             .ic-lms-certificate-wrap input[type="text"],
+            .ic-lms-certificate-wrap select,
             .ic-lms-certificate-wrap textarea {
                 width: 100%;
                 padding: 12px;
@@ -101,6 +160,7 @@ class IC_LMS_Certificate {
                 transition: border-color 0.15s ease-in-out;
             }
             .ic-lms-certificate-wrap input[type="text"]:focus,
+            .ic-lms-certificate-wrap select:focus,
             .ic-lms-certificate-wrap textarea:focus {
                 border-color: #2271b1;
                 box-shadow: 0 0 0 1px #2271b1;
@@ -120,6 +180,11 @@ class IC_LMS_Certificate {
             .ic-lms-certificate-wrap .button-primary:hover {
                 background: #135e96;
                 border-color: #135e96;
+            }
+            .ic-lms-certificate-wrap .description {
+                margin-top: 6px;
+                color: #646970;
+                font-style: italic;
             }
         </style>
         <?php
