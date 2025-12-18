@@ -1,3 +1,17 @@
+<?php 
+// $course_product_map = [
+//     8=>132,
+//     10=>133,
+//     6=>134
+// ];
+// the_post();
+// $product_id =  $course_product_map[get_the_ID()];
+$product_id = get_field('product');
+$purchased = wc_customer_bought_product('',get_current_user_id(), $product_id);
+if(!$purchased){
+    wp_redirect('http://wplms-demo.local/shop/');
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 

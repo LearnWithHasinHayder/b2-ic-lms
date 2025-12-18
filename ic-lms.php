@@ -27,12 +27,20 @@ require_once IC_LMS_PLUGIN_DIR . 'includes/class-rewrite.php';
 require_once IC_LMS_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once IC_LMS_PLUGIN_DIR . 'includes/class-lms-player.php';
 require_once IC_LMS_PLUGIN_DIR . 'includes/class-certificate.php';
+require_once IC_LMS_PLUGIN_DIR . 'includes/class-wc-helper.php';
 
 add_action('plugins_loaded', 'ic_lms_init');
 
-function ic_lms_init(){
+function ic_lms_init() {
     new IC_LMS_Rewrite();
     new IC_LMS_Course_API();
     new IC_LMS_Player();
     new IC_LMS_Certificate();
+    new IC_LMS_WC_Helper();
 }
+
+register_activation_hook(__FILE__, function () {
+    add_rewrite_endpoint('demo', EP_PAGES);
+    add_rewrite_endpoint('xyz', EP_PAGES);
+    flush_rewrite_rules();
+});
